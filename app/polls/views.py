@@ -1,5 +1,5 @@
-from django.http import HttpResponse
-from django.shortcuts import render
+from django.http import HttpResponse, Http404
+from django.shortcuts import render, render_to_response, get_object_or_404
 
 from .models import Question
 
@@ -30,8 +30,15 @@ def index(request):
     # return HttpResponse(output)
 
 
+def custom_get_object_or_404(model, **kwargs):
+    try:
+        return model.objects.get(**kwargs)
+    except model.DiesNotExist:
+        raise Http404()
+
 def detail(request, question_id):
-    return HttpResponse("You'r re looking at question %s." % question_id)
+    question = get_object_or_404(Question, id=question_id, pub_date_isnull=False)
+
 
 
 def results(request, question_id):
