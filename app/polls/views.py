@@ -1,5 +1,5 @@
 from django.http import HttpResponse, Http404, HttpResponseRedirect
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 
 from .models import Question, Choice
@@ -39,27 +39,30 @@ def detail(request, question_id):
         raise Http404("Question does not exist")
     return render(request, 'polls/detail.html', {'question': question})
 
+def vote(request, question_id):
+    # question_id에 해당하는 Question인스턴스를 전달
+    # context에 'question'키로 담아 보내기
+    # 템플릿 (app/polls/templates/polls/results.html 에 작성)
+    # Question 의 question_text 를 보여주고
+    # Question에 연결된 Choice목록과 vote수를 보여준다.
+    print('requsetDIR:', dir(request.POST.get))
+    print(request.POST)
+
+    question = Question.objects.get(pk=question_id)
+    # 선택한 choice radio 의 name 값, POST 로 받은 딕셔너리에서 choice를 꺼내온다.
+    selected_choice = question.choice_set.get(pk=request.POST['choice'])
+    # DB votes 값에 +1후 저장
+    selected_choice.votes += 1
+    selected_choice.save()
+
+    url = reverse('polls:results', args=[question.id])
+    return redirect(url)
 
 def results(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
+    # Question 의 인스턴스 id 를 얻어오다.
+    question = Question.objects.get(pk=question_id)
+    # results.html 에서 참조하는 question
     context = {
         'question':question,
     }
     return render(request, 'polls/results.html', context)
-
-
-def vote(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
-    try:
-        selected_choice = question.choice_set.get(pk=request.POST['choice'])
-    except (KeyError, Choice.DoesNotExist):
-        context = {
-            'question':question,
-            'error_message':"You didn't select a choice."
-        }
-        return render(request, 'polls/detail.html', context)
-    else:
-        selected_choice.votes += 1
-        selected_choice.save()
-
-        return HttpResponseRedirect(reverse('polls:results', args=(question_id,)))
